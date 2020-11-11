@@ -1,0 +1,143 @@
+---
+title: "ESM 206 Week 5 Coding Lab"
+author: "Shelby Smith"
+date: "11/10/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(palmerpenguins)
+library(effsize)
+library(janitor)
+library(broom)
+library(ggbeeswarm)
+library(car)
+```
+
+# Part 1. T-tests 
+
+Mass comparison between male and female chinstrap penguins
+
+```{r}
+chinstrap_penguins <- penguins %>% 
+  filter(species=="Chinstrap")
+
+# Histograms (only takes one variable)
+chinstrap_penguins %>% 
+  ggplot(aes(x= body_mass_g)) +
+  geom_histogram(bins=10)+
+  facet_wrap(~sex)
+  
+```
+
+- distribution overall looks pretty normal generally bell shaped, so mean would be a reasonable measure of central tendency
+
+- male central tendency is higher (about 4000), and female central tendency is lower around 3500
+
+## QQ plot
+
+- #in qqplot, you tell r what the sample is aes(sample=)
+```{r}
+chinstrap_penguins %>% 
+  ggplot(aes(sample=body_mass_g))+
+  geom_qq()+
+  facet_wrap(~sex)
+```
+
+- as close to normally distributed as possible 
+
+
+
+## Get Descriptive Statistics
+
+```{r}
+descriptive_stats<- chinstrap_penguins %>% 
+  group_by(sex) %>% 
+  summarise(
+    mean_mass= mean(body_mass_g),
+    median_mass= median(body_mass_g),
+    sd_mass= sd(body_mass_g),
+    sample_size= n())
+```
+
+- means are a bit different for females and males as we saw in our histograms
+
+- both have sample size of 34
+
+- similar standard deviation
+
+- median is similar to mean- reflected in symmetric distribution in the histogram
+
+## Get Vectors of body_mass_g for female and male chinstrap penguins seperatley: 
+
+```{r}
+chinstraps_f<- chinstrap_penguins %>% 
+  filter(sex=="female") %>% 
+  pull(body_mass_g)
+
+chinstraps_m<- chinstrap_penguins %>% 
+  filter(sex=="male") %>% 
+  pull(body_mass_g)
+```
+
+## Run a two-sample tests, a couple different ways 
+
+1. Is there a significant difference in body mass between male and female chinstrap penguins?
+
+```{r}
+chinstrap_ttest<- t.test(chinstraps_f, chinstraps_m)
+chinstrap_ttest #call this to make visible
+```
+
+- mean of x (chinstraps_f)= 3527.206, mean of y (chinstraps_m= 3938.971
+
+- null hypothesis: difference in means in not equal to 0, aka means are equal for male and females
+
+- t= -5.2077 measure of how different from 0 our means are from the t-distribution
+
+- df measure of sample size
+
+- pvalue= very small probability that I could have gotten means at least this different by random chance if I drew samples from populations with the same mean --> sufficient evidence to reject null hypothesis --> conclude that there is a significant difference in body mass between male and female chinstraps 
+
+- what is the actual difference? How much larger are male's than females? 
+
+```{r}
+cohen.d(chinstraps_f, chinstraps_m)
+```
+
+Cohen's d= -1.26 large effect size --> this is a clear difference that exists betweeen female and male chinstraps
+
+There is a significant difference in body mass, and a large effect size (Cohen's *d* = -1.26). The way I'm *writing this* is not reproducible. How can we use in-line referencing of outcomes so that the values would automatically update if the values did? 
+
+Use `broom::tidy()` to get messy model outputs into tidy data frames that are easy to reference! 
+
+```{r}
+chinstrap_out <- broom::tidy(chinstrap_ttest)
+chinstrap_out
+```
+
+You can **reference values from model outputs in your R markdown text**:
+
+t(`r round(chinstrap_out$parameter,2)`) = `r round(chinstrap_out$statistic,2)`, *p* = `r chinstrap_out$p.value`.
+
+2. Are male chinstrap penguins significantly larger (in body mass) than female chinstrap penguins?
+
+This is a *one-sided* test - we are only interested in the upper tail. We will still use the `t.test()` function, but update the default `alternative = ` argument from "two-sided" to "greater" or "less."
+
+- one sided t-test
+- order matters here 
+- alternative= 'greater' or 'less' depending on which direction interested in
+
+```{r}
+# "Is mean male mass significantly GREATER than female mass?"
+t.test(chinstraps_m, chinstraps_f, alternative = "greater")
+
+# Yields the same statistical outcomes as "Is mean female mass significantly LESS than male mass?" 
+t.test(chinstraps_f, chinstraps_m, alternative = "less")
+```
+```
+
+- reject null that masses are equal, retain alt that male > female
+- male chinstrap 

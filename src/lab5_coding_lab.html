@@ -462,8 +462,65 @@ chinstrap_penguins %&gt;%
 <li><p>means are a bit different for females and males as we saw in our histograms</p></li>
 <li><p>both have sample size of 34</p></li>
 <li><p>similar standard deviation</p></li>
-<li><p>median is similar to mean- refelcted in symmetric distribution in the histogram</p></li>
+<li><p>median is similar to mean- reflected in symmetric distribution in the histogram</p></li>
 </ul>
+</div>
+<div id="get-vectors-of-body_mass_g-for-female-and-male-chinstrap-penguins-seperatley" class="section level2">
+<h2>Get Vectors of body_mass_g for female and male chinstrap penguins seperatley:</h2>
+<pre class="r"><code>chinstraps_f&lt;- chinstrap_penguins %&gt;% 
+  filter(sex==&quot;female&quot;) %&gt;% 
+  pull(body_mass_g)
+
+chinstraps_m&lt;- chinstrap_penguins %&gt;% 
+  filter(sex==&quot;male&quot;) %&gt;% 
+  pull(body_mass_g)</code></pre>
+</div>
+<div id="run-a-two-sample-tests-a-couple-different-ways" class="section level2">
+<h2>Run a two-sample tests, a couple different ways</h2>
+<ol style="list-style-type: decimal">
+<li>Is there a significant difference in body mass between male and female chinstrap penguins?</li>
+</ol>
+<pre class="r"><code>chinstrap_ttest&lt;- t.test(chinstraps_f, chinstraps_m)
+chinstrap_ttest #call this to make visible</code></pre>
+<pre><code>## 
+##  Welch Two Sample t-test
+## 
+## data:  chinstraps_f and chinstraps_m
+## t = -5.2077, df = 62.575, p-value = 2.264e-06
+## alternative hypothesis: true difference in means is not equal to 0
+## 95 percent confidence interval:
+##  -569.7903 -253.7391
+## sample estimates:
+## mean of x mean of y 
+##  3527.206  3938.971</code></pre>
+<ul>
+<li><p>mean of x (chinstraps_f)= 3527.206, mean of y (chinstraps_m= 3938.971</p></li>
+<li><p>null hypothesis: difference in means in not equal to 0, aka means are equal for male and females</p></li>
+<li><p>t= -5.2077 measure of how different from 0 our means are from the t-distribution</p></li>
+<li><p>df measure of sample size</p></li>
+<li><p>pvalue= very small probability that I could have gotten means at least this different by random chance if I drew samples from populations with the same mean –&gt; sufficient evidence to reject null hypothesis –&gt; conclude that there is a significant difference in body mass between male and female chinstraps</p></li>
+<li><p>what is the actual difference? How much larger are male’s than females?</p></li>
+</ul>
+<pre class="r"><code>cohen.d(chinstraps_f, chinstraps_m)</code></pre>
+<pre><code>## 
+## Cohen&#39;s d
+## 
+## d estimate: -1.263061 (large)
+## 95 percent confidence interval:
+##      lower      upper 
+## -1.7933879 -0.7327341</code></pre>
+<p>Cohen’s d= -1.26 large effect size –&gt; this is a clear difference that exists betweeen female and male chinstraps</p>
+<p>There is a significant difference in body mass, and a large effect size (Cohen’s <em>d</em> = -1.26). The way I’m <em>writing this</em> is not reproducible. How can we use in-line referencing of outcomes so that the values would automatically update if the values did?</p>
+<p>Use <code>broom::tidy()</code> to get messy model outputs into tidy data frames that are easy to reference!</p>
+<pre class="r"><code>chinstrap_out &lt;- broom::tidy(chinstrap_ttest)
+chinstrap_out</code></pre>
+<pre><code>## # A tibble: 1 x 10
+##   estimate estimate1 estimate2 statistic p.value parameter conf.low conf.high
+##      &lt;dbl&gt;     &lt;dbl&gt;     &lt;dbl&gt;     &lt;dbl&gt;   &lt;dbl&gt;     &lt;dbl&gt;    &lt;dbl&gt;     &lt;dbl&gt;
+## 1    -412.     3527.     3939.     -5.21 2.26e-6      62.6    -570.     -254.
+## # … with 2 more variables: method &lt;chr&gt;, alternative &lt;chr&gt;</code></pre>
+<p>You can <strong>reference values from model outputs in your R markdown text</strong>:</p>
+<p>t(62.58) = -5.21, <em>p</em> = 2.264431610^{-6}.</p>
 </div>
 </div>
 
