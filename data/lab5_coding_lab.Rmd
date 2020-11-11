@@ -7,24 +7,65 @@ output: html_document
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(palmerpenguins)
+library(effsize)
+library(janitor)
+library(broom)
+library(ggbeeswarm)
+library(car)
 ```
 
-## R Markdown
+# Part 1. T-tests 
 
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+Mass comparison between male and female chinstrap penguins
 
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+```{r}
+chinstrap_penguins <- penguins %>% 
+  filter(species=="Chinstrap")
 
-```{r cars}
-summary(cars)
+# Histograms (only takes one variable)
+chinstrap_penguins %>% 
+  ggplot(aes(x= body_mass_g)) +
+  geom_histogram(bins=10)+
+  facet_wrap(~sex)
+  
 ```
 
-## Including Plots
+- distribution overall looks pretty normal generally bell shaped, so mean would be a reasonable measure of central tendency
 
-You can also embed plots, for example:
+- male central tendency is higher (about 4000), and female central tendency is lower around 3500
 
-```{r pressure, echo=FALSE}
-plot(pressure)
+## QQ plot
+
+- #in qqplot, you tell r what the sample is aes(sample=)
+```{r}
+chinstrap_penguins %>% 
+  ggplot(aes(sample=body_mass_g))+
+  geom_qq()+
+  facet_wrap(~sex)
 ```
 
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+- as close to normally distributed as possible 
+
+
+
+## Get Descriptive Statistics
+
+```{r}
+descriptive_stats<- chinstrap_penguins %>% 
+  group_by(sex) %>% 
+  summarise(
+    mean_mass= mean(body_mass_g),
+    median_mass= median(body_mass_g),
+    sd_mass= sd(body_mass_g),
+    sample_size= n())
+```
+
+- means are a bit different for females and males as we saw in our histograms
+
+- both have sample size of 34
+
+- similar standard deviation
+
+- median is similar to mean- refelcted in symmetric distribution in the histogram
