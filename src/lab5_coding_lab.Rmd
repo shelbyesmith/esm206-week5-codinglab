@@ -137,7 +137,136 @@ t.test(chinstraps_m, chinstraps_f, alternative = "greater")
 # Yields the same statistical outcomes as "Is mean female mass significantly LESS than male mass?" 
 t.test(chinstraps_f, chinstraps_m, alternative = "less")
 ```
-```
 
 - reject null that masses are equal, retain alt that male > female
 - male chinstrap 
+
+
+## One-way ANOVA
+
+### 1. Make a table of counts by species and sex
+- can use group_by(sex=="female), summarize(n())
+- or can use count()
+
+```{r}
+penguin_counts <- penguins %>% 
+count(species, sex)
+
+penguin_counts
+```
+
+- large enough sample size that means are equally distributed 
+- must also look at exploratory data viz to confirm 
+
+Create a subset of only female penguins: 
+
+Delineate species by: 
+- aes(fill=species)
+- +facet_wrap(~species)
+
+- fill changes color of bars
+- color changes color of points 
+```{r}
+penguin_f <-penguins %>% 
+  filter(sex =="female")
+
+#histogram
+penguin_f %>% 
+  ggplot(aes(x=flipper_length_mm))+ # don't give histogram 2nd variable
+  geom_histogram(aes(fill=species))+ #colors by species
+  facet_wrap(~species, scales="free")  # scales=free makes each panel different x and y scales
+  
+#qq-plot
+penguin_f %>% 
+  ggplot(aes(sample=flipper_length_mm))+ #feed qqplot a sample 
+  geom_qq(aes(color=species))+ #colors by species
+  facet_wrap(~species, scales="free")  # scales=free makes each panel different x and y scales
+```
+
+Closer these are to linear, closer to knowing that samples were drawn from a normally distributed population. 
+
+### Find Summary Statistics
+
+- standard error= sd/ sqrt(n)
+
+When looking at equal variances, we will run a test for it. If your largest variance for a group is less than 4x your smallest variance for a group, then those are close enough. So in this case, it is within guidelines for close enough equality in variance for ANOVA test. 
+
+### Levene's Test for Variance 
+- as sample size gets larger, you will detect a significant difference in variance even if it is small or minimal
+- make sure it's also within 4-to-1 guideline 
+
+```{r}
+penguin_f_summary<- penguin_f %>% 
+  group_by(species) %>% 
+  summarize(
+    mean_flipper_length = mean(flipper_length_mm),
+    sd_flipper_length = sd(flipper_length_mm),
+    sample_size = n(),
+    se_flipper_length = sd(flipper_length_mm) / sqrt(n()), 
+    var_flipper_length = var(flipper_length_mm))
+
+leveneTest(flipper_length_mm ~ species, data = penguin_f)
+```
+
+P-value (pr(>F)) is 0.056 is above significance level--> retain hypothesis that variance is equal
+
+### Beeswarm plot with the mean +- 1sd
+
+```{r}
+ggplot()+ 
+  geom_beeswarm(data=penguin_f, 
+                aes(x=species, y=flipper_length_mm),
+                color= "grey70",
+                size= 3,
+                alpha=0.5) +
+  geom_point(data = penguin_f_summary, #adding the mean as a point on top of beeswarm
+             aes(x=species, y=mean_flipper_length),
+             color= "coral",
+             size=5) +
+  geom_errorbar(data=penguin_f_summary,
+                aes(x=species,
+                    ymax=mean_flipper_length + sd_flipper_length,
+                    ymin=mean_flipper_length - sd_flipper_length),
+                width=0.1)+ 
+  theme_minimal()
+```
+
+
+## One-way ANOVA
+
+Is there a significant different in mean flipper lengths in female penguins between Adelie, Chinstrap, and Gentoo penguins. 
+
+- usually in in ENVS you want to do a type 3 ANOVA because sample sizes are unbalanced
+
+- aov() is a type 1 ANOVA
+
+```{r}
+#run one way aov that compares flipper length as a function of species, only include female penguins data
+penguin_aov <- aov(flipper_length_mm ~species, data=penguin_f)
+summary(penguin_aov)
+
+#post-hoc test: Tukey's HSD
+#does pairwise comparisons that adjusts so no .05 error 
+TukeyHSD(penguin_aov)
+#returns adjusted p-values 
+#there is a sig difference between all of these groups 
+```
+
+F-statistic is the ratio of between group sum of squares divided within group sum of squares. In this case, this is the difference between groups is very large than within groups. This is reflected in the p-value, very low. Negligably low probability that we could gotten means this different if they were actually were from populations with the same mean. Reject null hypothesis that they have equal means. 
+
+Post hoc test returns adjusted p-values.
+Shows that there is a significant difference between all of the group's flipper length.
+
+## Type 3 ANOVA
+
+If you have very different sample sizes and distributions. Orthogonial or type 3 anova. 
+When doing this in the real world, look up which to use 
+
+```{r}
+penguin_lm<- lm(flipper_length_mm ~species, data = penguin_f)  #linear model
+penguin_aov_type3<- Anova(penguin_lm, type = "III")
+penguin_aov_type3
+
+```
+
+The F value is the same as the type 1 we ran above. Should be very similar unless data has unbalanced design and very different sample sizes within groups. 
